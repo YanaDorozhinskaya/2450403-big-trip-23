@@ -1,12 +1,12 @@
-import AbstractView from '../framework/view/abstract-view.js';
+import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 import dayjs from 'dayjs';
 
 const createEditingFormTemplate = (trip, destinations, offersByType) => {
   const { destination, type, offers } = trip;
 
-  const destinationDetails = destinations.find((dest) => dest.id === destination);
+  const destinationDetails = destinations.find((dest) => dest.id === destination) || {};
 
-  const photoHTML = destinationDetails.pictures.map((pic) => `
+  const photoHTML = (destinationDetails.pictures || []).map((pic) => `
     <img class="event__photo" src="${pic.src}" alt="${pic.description}">
   `).join('');
 
@@ -14,7 +14,7 @@ const createEditingFormTemplate = (trip, destinations, offersByType) => {
     <option value="${dest.name}" "${destinationDetails.name === dest.name ? 'selected' : ''}"></option>
   `).join('');
 
-  const relevantOffers = offersByType.find((option) => option.type === type).offers;
+  const relevantOffers = offersByType.find((option) => option.type === type)?.offers || [];
 
   const eventOffersHTML = relevantOffers.map((offer, index) => `
     <div class="event__offer-selector">
@@ -109,7 +109,7 @@ const createEditingFormTemplate = (trip, destinations, offersByType) => {
   );
 };
 
-export default class EditingFormView extends AbstractView {
+export default class EditingFormView extends AbstractStatefulView {
   #trip = null;
   #destinations = null;
   #offers = null;
@@ -155,4 +155,6 @@ export default class EditingFormView extends AbstractView {
     evt.preventDefault();
     this.#handleFormreset();
   };
+
 }
+

@@ -2,11 +2,15 @@ import SortingView from '../view/sorting-view.js';
 import WaypointsListView from '../view/waypoints-list-view.js';
 import { render } from '../framework/render.js';
 import WaypointPresenter from './waypoint-presenter.js';
+import { updateData } from '../utils.js';
 
 export default class TripPresenter extends AbortController {
   #container = null;
   #tripModel = null;
-  #activeWaypoint = null;
+  #trips = [];
+  #destinations = [];
+  #offersByType = [];
+  #waypointPresenters = new Map();
 
   constructor({ container, tripModel }) {
     super();
@@ -15,37 +19,43 @@ export default class TripPresenter extends AbortController {
   }
 
   init() {
-    const trips = [...this.#tripModel.getTrips()];
-    const destinations = [...this.#tripModel.getDestinations()];
-    const offers = [...this.#tripModel.getOffers()];
-    const favorites = [...this.#tripModel.getFavorite()];
+    this.#trips = this.#tripModel.getTrips();
+    this.#destinations = this.#tripModel.getDestinations();
+    this.#offersByType = this.#tripModel.getOffers();
+
+    this.#renderTrip();
+  }
+
+  #renderTrip() {
 
     const waypointsListView = new WaypointsListView();
 
     render(waypointsListView, this.#container);
     render(new SortingView(), this.#container);
 
-    trips.forEach((trip, index) => {
-      this.#renderWaypoint(waypointsListView, trip, destinations, offers, favorites[index]);
-    });
+    this.#trips.forEach((trip) => this.#renderWaypoint(waypointsListView, trip));
   }
 
-  #renderWaypoint(waypointsListView, trip, destinations, offers, favorites) {
+  #renderWaypoint(waypointsListView, trip) {
     const waypointPresenter = new WaypointPresenter({
-      waypointsListView,
-      trip,
-      destinations,
-      offers,
-      favorites,
-      onWaypointEdit: this.#handleWaypointEdit.bind(this)
+      container: waypointsListView.element,
+      trip: trip,
+      destinations: this.#destinations,
+      offers: this.#offersByType,
+      onPointUpdate: this.#handleDataChange,
+      onEditStart: this.#handleWaypointEdit
     });
-    waypointPresenter.render();
+
+    waypointPresenter.init(trip);
+    this.#waypointPresenters.set(trip.id, waypointPresenter);
   }
 
-  #handleWaypointEdit(waypointPresenter) {
-    if(this.#activeWaypoint && this.#activeWaypoint !== waypointPresenter) {
-      this.#activeWaypoint.resetEditForm();
-    }
-    this.#activeWaypoint = waypointPresenter;
+  #handleDataChange(updatedItem) {
+    this.#trips = updateData(this.#trips, updatedItem);
+    this.#waypointPresenters.get(updatedItem.id).init(updatedItem);
   }
+
+  #handleWaypointEdit = () => {
+    this.#waypointPresenters.forEach((presenter) => presenter.resetAll());
+  };
 }

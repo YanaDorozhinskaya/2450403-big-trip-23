@@ -29,4 +29,7 @@ function getDifferenceDate (from, to) {
 
 const isEscapeKey = (evt) => evt.key === 'Escape';
 
-export { getRandomNum, getRandomArrayElement, getDifferenceDate, isEscapeKey };
+const updateItem = (item, prop) => ({...item, ...prop});
+const updateData = (data, update) => data.map((item) => item.id === update.id ? update : item);
+
+export { getRandomNum, getRandomArrayElement, getDifferenceDate, isEscapeKey, updateItem, updateData };

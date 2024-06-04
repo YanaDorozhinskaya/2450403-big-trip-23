@@ -6,30 +6,32 @@ import EditingFormView from '../view/editing-form-view.js';
 import { Mode } from '../const.js';
 
 export default class WaypointPresenter extends AbstractView {
-  #waypointListView = null;
+  #container = null;
   #trip = null;
   #destinations = null;
-  #offers = null;
-  #favorites = null;
+  #offersByType = null;
   #waypointComponent = null;
   #editingFormComponent = null;
+  #handleDataChange = null;
+  #onEditStart = null;
   #mode = Mode.DEFAULT;
-  #onWaypointEdit = null;
 
-  constructor ({waypointsListView, trip, destinations, offers, favorites, onWaypointEdit}) {
+  constructor ({container, trip, destinations, offersByType, onPointUpdate, onEditStart}) {
     super();
-    this.#waypointListView = waypointsListView;
+    this.#container = container;
     this.#trip = trip;
     this.#destinations = destinations;
-    this.#offers = offers;
-    this.#favorites = favorites;
-    this.#onWaypointEdit = onWaypointEdit;
+    this.#offersByType = offersByType;
+    this.#handleDataChange = onPointUpdate;
+    this.#onEditStart = onEditStart;
+  }
 
+  init(trip) {
+    this.#trip = trip;
     this.#waypointComponent = new WaypointView({
       trip: this.#trip,
       destinations: this.#destinations,
-      offers: this.#offers,
-      favorites: this.#favorites,
+      offers: this.#offersByType,
       onEditClick: this.#onEditClick,
       onFavoriteButton: this.#onFavoriteButton
     });
@@ -37,11 +39,12 @@ export default class WaypointPresenter extends AbstractView {
     this.#editingFormComponent = new EditingFormView({
       trip: this.#trip,
       destinations: this.#destinations,
-      offers: this.#offers,
-      favorites: this.#favorites,
+      offers: this.#offersByType,
       onFormSubmit: this.#onFormSubmit,
       onFormReset: this.#onFormReset,
     });
+
+    render(this.#waypointComponent, this.#container);
   }
 
   resetEditForm() {
@@ -59,12 +62,21 @@ export default class WaypointPresenter extends AbstractView {
 
   #onEditClick = () => {
     this.#switchToEditMode();
-    this.#onWaypointEdit(this);
+    this.#onEditStart(this);
   };
 
-  #onFormSubmit = () => this.#switchToViewMode();
+  #onFormSubmit = (updatedTrip) => {
+    this.#trip = updatedTrip;
+    this.#handleDataChange(updatedTrip);
+    this.#switchToViewMode();
+  };
+
   #onFormReset = () => this.#switchToViewMode();
-  #onFavoriteButton = () => this.#switchToFavoriteAndBack();
+  #onFavoriteButton = () => {
+    this.#trip.isFavorite = !this.#trip.isFavorite;
+    this.#handleDataChange(this.#trip);
+    this.#switchToFavoriteAndBack();
+  };
 
   #switchToEditMode() {
     replace(this.#editingFormComponent, this.#waypointComponent);
@@ -79,12 +91,7 @@ export default class WaypointPresenter extends AbstractView {
   }
 
   #switchToFavoriteAndBack = () => {
-    this.#favorites = !this.#favorites;
-    this.#waypointComponent.updateFavorite(this.#favorites);
+    this.#waypointComponent.updateFavorite(this.#trip.isFavorite);
   };
-
-  render() {
-    render(this.#waypointComponent, this.#waypointListView.element);
-  }
 }
 

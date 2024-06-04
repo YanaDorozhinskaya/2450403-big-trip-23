@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 const createWaypointTemplate = (trip, destinations, offersByType) => {
   const { basePrice, dateFrom, dateTo, destination, isFavorite, offers, type } = trip;
 
-  const selectedOffers = offersByType.flatMap((option) => option.offers)
+  const selectedOffers = (offersByType || []).flatMap((option) => option.offers)
     .filter((offer) => offers.includes(offer.id));
 
   const desiredDestination = destinations.find((dest) => dest.id === destination);
@@ -65,35 +65,37 @@ export default class WaypointView extends AbstractView {
   #destinations = null;
   #offers = null;
   #handleFormReset = null;
-  #favorites = null;
   #handleFavoritePoint = null;
 
-  constructor({trip, destinations, offers, favorites, onEditClick, onFavoriteButton}) {
+  constructor({trip, destinations, offers, onEditClick, onFavoriteButton}) {
     super();
     this.#trip = trip;
     this.#destinations = destinations;
     this.#offers = offers;
-    this.#favorites = favorites;
     this.#handleFormReset = onEditClick;
     this.#handleFavoritePoint = onFavoriteButton;
 
     this.#onFavoriteButtonClick = this.#onFavoriteButtonClick.bind(this);
+    this.#onRollupClick = this.#onRollupClick.bind(this);
+  }
+
+  get template () {
+    return createWaypointTemplate(this.#trip, this.#destinations, this.#offers);
+  }
+
+  setEventListeners() {
     this.element.querySelector('.event__rollup-btn')
       .addEventListener('click', this.#onRollupClick);
     this.element.querySelector('.event__favorite-btn')
       .addEventListener('click', this.#onFavoriteButtonClick);
   }
 
-  get template () {
-    return createWaypointTemplate(this.#trip, this.#destinations, this.#offers, this.#favorites);
-  }
-
   removeElement() {
-    super.removeElement();
     this.element.querySelector('.event__rollup-btn')
       .removeEventListener('click', this.#onRollupClick);
     this.element.querySelector('.event__rollup-btn')
       .removeEventListener('click', this.#onFavoriteButtonClick);
+    super.removeElement();
   }
 
   #onRollupClick = (evt) => {
@@ -102,18 +104,7 @@ export default class WaypointView extends AbstractView {
   };
 
   #onFavoriteButtonClick = (evt) => {
-    evt.preventDefault();
+    evt.preventDefault(); // не нужно сбрасывать поведение по-умолчанию?
     this.#handleFavoritePoint();
-  };
-
-  updateFavorite = (isFavorite) => {
-    const favoriteButton = this.element.querySelector('.event__favorite-btn');
-    if (favoriteButton) {
-      if (isFavorite) {
-        favoriteButton.classList.add('event__favorite-btn--active');
-      } else {
-        favoriteButton.classList.remove('event__favorite-btn--active');
-      }
-    }
   };
 }
